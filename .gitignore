@@ -1,0 +1,7 @@
+# Internal folders
+CodeMeter/
+SLB_Licensing_Tool/
+
+# routine temp files and folders
+**/tmp/
+*.log
