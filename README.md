@@ -18,7 +18,7 @@ More details of [How to Add a Virtual Ethernet Card vNIC in Linux](./Add-a-Virtu
 
 ## Contacts
 
-In case of hard-time encountered, please give a shout to [Marcus Zou](mzou35@gatech.edu).
+In case of hard-time encountered, please give a shout to [Marcus Zou](mailto:mzou35@gatech.edu).
 
 
 
