@@ -116,7 +116,7 @@ If you check the log file by running `tail /var/log/flex/flex.log`, you should s
  9:15:40 (slbsls) DPLT: waiting for logger to connect
 ```
 
-Which means the licensing server is ready for client (Petrel) calls.
+Which means the licensing server is ready for calls from clients: Petrel, Techlog, etc.
 
 **Note: Key usage of FlexNet (FLEXlm) Network Licensing: lmgrd**
 
