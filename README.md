@@ -12,11 +12,9 @@ Enjoy the power of lightweight WSL Linux coupled with SLB Licensing Server.
 
 ## Attachments
 
-More details of [How to Add a Virtual Ethernet Card vNIC in Linux](./Add-a-Virtual-Ethernet-Card-vNIC-in-Linux.md) in case of the default NIC goes wrong.
+* In case of the default NIC goes wrong, we will [Add a Virtual Ethernet Card vNIC in Linux](./Add-a-Virtual-Ethernet-Card-vNIC-in-Linux.md)
 
-Keep the Linux distro alive when Terminal closes? Please refer to my writings: 
-
-[WSL2-Setting-Up-WSL-with-VSCode](./WSL2-Setting-Up-WSL-with-VSCode.md)
+* Keep the Linux distro alive 24/7? Please refer to my writings: [Keep-WSL2-alive-in-the-background](./Keep-WSL2-alive-in-the-background.md)
 
 
 
