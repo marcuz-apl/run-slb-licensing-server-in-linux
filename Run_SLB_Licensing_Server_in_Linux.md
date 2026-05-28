@@ -56,7 +56,8 @@ Go to https://www.sdc.software.slb.com/, click **SIS**, and log in. In the left 
 Then, extract the package using tar command in Linux
 
 ```shell
-tar xzvf SLB_Licensing_2025.1_linux.tar.gz -C /opt/slb-licesning/
+mkdir -p /opt/slb-licensing/
+tar xzvf /mnt/e/folder/to/SLB_Licensing_2025.1_linux.tar.gz -C /opt/slb-licesning/
 ```
 
 The "**-C**" argument specifies the folder holding the licensing app. You may need administrator privilege to create such folder.
@@ -70,8 +71,8 @@ slbfd*** or ***VENDOR lmgrd.slb*** line to read ***VENDOR slbsls***. When altere
 SERVER this_host 0123456789
 VENDOR slbsls
 USE_SERVER
-INCREMENT gasfield slbfd 2006.0 1-jun-2020 1 SUPERSEDE=gasfield \
-NOTICE="0738198 A2GF-P1" START=12-jun-2006 AUTH={ slbfd=( \
+INCREMENT gasfield slbfd 2022.0 1-jun-2024 1 SUPERSEDE=gasfield \
+NOTICE="0738198 A2GF-P1" START=12-jun-2024 AUTH={ slbfd=( \
 SIGN="003E 9B74 A1DC 645B D177 B400 A079 E400 1D40 09BC 2C27
 9800 B0AE DA4B FC48") lmgrd.slb=( LK=7689E5620621 SIGN="008D\
 3799 4265 25A4 25C5 DA12 534D A800 4331 A349 9740 7B86 36BF \
@@ -84,8 +85,6 @@ A613 FBF6" SIGN2="00F9 B765 0F28 3BEE 6179 6718 22C7 0D00 B1E0 \
 Simply run:
 
 ```shell
-# Create a folder for flexlm use
-mkdir -p /usr/tmp/.flexlm
 # copy the Petrel-2024-license.lic file over to the default license folder and rename it
 cp /mnt/e/folder/to/Petrel-2024-license.lic /opt/slb-licensing/license.dat
 ```
@@ -98,7 +97,7 @@ We are gonna use the license daemon`lmgrd` to launch the server instance `slnsls
 # Enter into the folder where the license daemon resides
 cd /opt/slb-licensing
 # Spin up the license service by
-./lmgrd -z -c ./license.dat -2 -p -l +/var/log/flex/flex.log
+./lmgrd -c ./license.dat -2 -p -l +/var/log/flex/flex.log
 ```
 
 If you check the log file by running `tail /var/log/flex/flex.log`, you should see the following messages:
@@ -116,7 +115,7 @@ If you check the log file by running `tail /var/log/flex/flex.log`, you should s
  9:15:40 (slbsls) DPLT: waiting for logger to connect
 ```
 
-Which means the licensing server is ready for calls from clients: Petrel, Techlog, etc.
+The last line means the licensing server is up running and ready for calls from clients: Petrel, Techlog, etc.
 
 **Note: Key usage of FlexNet (FLEXlm) Network Licensing: lmgrd**
 
@@ -141,13 +140,13 @@ Common Command-Line Options:
 | `-v`     | Displays version information.                                |
 | -2 -p    | All platforms: -2 -p is effective, and supported, only when used together with ‑local. <br />On UNIX systems, -2 -p restricts usage of lmdown, lmreread, and lmremove—as well as lmswitch, lmswitchr, and lmnewlog—to a license administrator who is by default root. If there is a UNIX group called lmadmin, then use is restricted to only members of that group. If root is not a member of this group, then root does not have permission to use any of the above utilities<br />On Windows systems, if lmgrd is started with -2 -p -local, lmgrd and the vendor daemon can only interact with the command-line utilities (lmreread, lmnewlog, lmdown, lmremove, and lmswitch) if these are located on the same machine and if they are run with LOCALSYSTEM privileges. |
 
-Windows Service Management
+**Windows Service Management**
 
 On Windows, `lmgrd` is generally installed and managed as a service using `lmtools.exe`. You can configure it to start automatically at boot.
 
 **6- Launch your Petrel 2024 to connect**
 
-the license server shall be in the format of `<server-port>@<LicComputerIPAddress>;`, such as:
+The license server shall be in the format of `<server-port>@<LicComputerIPAddress>;`, such as:
 
 ```text
 27000@172.23.96.76;
@@ -155,9 +154,36 @@ the license server shall be in the format of `<server-port>@<LicComputerIPAddres
 
 I have put the license server into a WSL Ubuntu 24.04, then the IP address is the one from WSL Ubuntu Environment, knowing such info by running command: `ip a`.
 
+**7- Conduct port-forwarding as needed** 
+
+You can forward that port from WSL Ubuntu/Rocky to Windows Host by running PowerShell commands.
+
+Open **PowerShell as Administrator** and run the following command, replacing `<Win_Port>`, `<WSL_Port>`, and `<WSL_IP>`:
+
+```shell
+netsh interface portproxy add v4tov4 listenport=<Win_Port> listenaddress=0.0.0.0 connectport=<WSL_Port> connectaddress=<WSL_IP>
+```
+
+*Example for forwarding WSL port 27000 to Windows port 27000:*
+
+```shell
+netsh interface portproxy add v4tov4 listenport=27000 listenaddress=0.0.0.0 connectport=27000 connectaddress=172.23.96.76
+
+## Show the result
+netsh interface portproxy show v4tov4
+```
+
+**8- Allow Traffic Through the Windows Firewall**
+
+If you want this port to be accessible from other devices on your LAN (Local Area Network), add a rule to the Windows Firewall in **PowerShell (Run as Administrator)**:
+
+```PowerShell
+New-NetFirewallRule -DisplayName "WSL Port Forward" -Direction Inbound -Protocol TCP -LocalPort <Win_Port> -Action Allow
+```
 
 
-## B) More Systematic Way: Create a New Startup Script
+
+## B) Create a New Startup Script: the Modern way
 
 > [!NOTE]
 >
@@ -173,40 +199,40 @@ useradd flexlm -c "flexlm user" -g flexlm -s /sbin/nologin
 **2- Create a directory `/var/log/flex`, and assign ownership to the new user `flexlm` by:**
 
 ```shell
+mkdir -p /var/log/flex
 chown flexlm: /var/log/flex
-chown flexlm: /opt/slb-licensing
 ```
 
 **3- Give ownership of installed files `lmgrd` and `slbsls` to the `flexlm` user.**
 
 ```shell
-# chown flexlm:flexlm lmgrd slbsls
-chown flexlm:flexlm /opt/slb-licensing/*
+cd /opt/slb-licensing
+chown flexlm:flexlm lmgrd slbsls
 ```
 
 **4- Give give the owner read and execute permissions.**
 
 ```shell
-chmod 544 lmgrd slbsls lmutil
+chmod 544 lmgrd slbsls
 ```
 
-**5- Create a new file called `slbsls.service` in `/etc/systemd/system` **
+**5- Create a new file called slbsls.service in /etc/systemd/system**
 
 ```shell
-touch /etc/systemd/system/slbsls.service
+nano /etc/systemd/system/slbsls.service
 ```
 
-**6- Add the following lines to the file `/etc/systemd/system/slbsls.service`:**
+**6- Add the following lines to the file:**
 
 ```text
 [Unit]
 Description=Licence manger for SLBSLS
-After=network.target codemeter.service
+After=network.target
 [Service]
 Type=simple
 User=flexlm
 WorkingDirectory=<inst_dir>
-ExecStart=<inst_dir>lmgrd -c <your_license_file> -2 -p -l +/var/log/flex/flex.log
+ExecStart=<inst_dir>lmgrd -z -c <your_license_file> -2 -p -l +/var/log/flex/flex.log
 SuccessExitStatus=15
 Restart=always
 RestartSec=30
@@ -214,20 +240,67 @@ RestartSec=30
 WantedBy=multi-user.target
 ```
 
-**<inst_dir>** is the installation path and **<your_license_file>** is the path to the license file.
+<inst_dir> is the installation path and <your_license_file> is the path to the license file.
 
-**7- Enable and start the service by**
+**7- Handle the log file**
 
 ```shell
-systemctl enable slbsls
+rm -rf /var/log/flex/flex.log
+touch /var/log/flex/flex.log
+choown flexlm:flexlm /var/log/flex/flex.log
+```
+
+**8- Configure the service to run automatically by**
+
+```shell
+systemctl enable --now slbsls
 systemctl start slbsls
 ```
 
-**8- Reload the daemon if you change the service config file: `/etc/systemd/system/slbsls.service`**
+> [!NOTE]
+>
+> The `-2 -p` options on the command line for starting the license server prevent other users from initiating a shut down or reread.
+
+> [!IMPORTANT]
+>
+> Reboot the Linux box to have a test out. 
+
+
+
+### B2) Create a New Startup Script: The Legacy way
+
+
+
+**1- Create a new file called `slbsls-flexstart` in the folder of `/etc/init.d/` **
 
 ```shell
-systemctl daemon-reload
-systemctl restart slbsls.service
+nano /etc/init.d/slbsls-flexstart
+```
+
+**2- Add the following lines to the file**
+
+```text
+#!/bin/sh
+/opt/slb-licensing/lmgrd -c /opt/slb-licensing/license.dat -2 -p -l +/var/log/flex/flex.log
+```
+
+Replace the path: `/opt/slb-licensing/` with yours.
+
+**3- Make the script executable using the following command:**
+
+```shell
+chmod 755 /etc/init.d/slbsls-flexstart
+```
+
+**4- Create links in both the `/etc/rc3.d` and `/etc/rc5.d` folders so the script is run at system startup.
+Change to the appropriate directory (for example /etc/rc3.d) and create a link.**
+
+```shell
+cd /etc/rc3.d
+ln -s /etc/init.d/slbsls-flexstart S99slbsls-flexstart
+
+cd /etc/rc5.d
+ln -s /etc/init.d/slbsls-flexstart S99slbsls-flexstart
 ```
 
 > [!IMPORTANT]
@@ -265,6 +338,8 @@ If there is only one **lmgrd**, stop it using the following command:
 
 ```shell
 pkill lmgrd
+## or kill the process-ID, "1722"
+kill -9 1726
 ```
 
 **3- Check that the lmgrd process is missing from the output using the command:**
